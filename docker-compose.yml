@@ -1,0 +1,31 @@
+version: '2' # composeファイルのバーション指定
+
+services:
+  todo_app: # service名
+    build:  # ビルドに使用するDockerfileがあるディレクトリ指定
+      context: ./golang
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    tty: true # コンテナの起動永続化
+    volumes:
+      - .:/go/src/work # マウントディレクトリ指定
+  
+  db:
+    build:
+      context: ./psql
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: rin
+      POSTGRES_PASSWORD: rin
+      PGPASSWORD: rin
+      POSTGRES_DB: rin
+      TZ: "Asia/Tokyo"
+    ports:
+      - 5432:5432
+    tty: true
+    volumes:
+      - db-store:/var/lib/postgresql/data
+
+volumes:
+  db-store:
