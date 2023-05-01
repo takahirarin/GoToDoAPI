@@ -76,14 +76,15 @@ func (tc *todoController) ChangeTodo(w http.ResponseWriter, r *http.Request) {
 
 }
 func (tc *todoController) DeleteTodo(w http.ResponseWriter, r *http.Request) {
-	result, err := tc.tm.DeleteTodo(r)
+	err := tc.tm.DeleteTodo(r)
 
 	if err != nil {
 		fmt.Fprint(w, err) // wに書き込み
 		return
 	}
 
-	json, err := json.Marshal(result)
+	json, err := json.Marshal(r.FormValue("id"))
+	
 	if err != nil {
 		fmt.Fprint(w, err) // wに書き込み
 		return

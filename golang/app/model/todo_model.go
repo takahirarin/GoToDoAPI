@@ -1,28 +1,30 @@
 package model
 
 import (
-	"database/sql"
-	"fmt"
-	"github.com/oklog/ulid"
-	"math/rand"
+	// "database/sql"
+	// "fmt"
+	// "github.com/oklog/ulid"
+	// "math/rand"
 	"net/http"
-	"time"
+	
+	// "gorm.io/driver/postgres"
+    "gorm.io/gorm"
 )
 
 type TodoModel interface {
 	FetchTodos() ([]*Todo, error) //メソッド名 (引数) (リターン)
-	AddTodo(r *http.Request) (sql.Result, error)
-	ChangeTodo(r *http.Request) (sql.Result, error)
-	DeleteTodo(r *http.Request) (sql.Result, error)
+	AddTodo(r *http.Request) (*Todo, error)
+	ChangeTodo(r *http.Request) (*Todo, error)
+	DeleteTodo(r *http.Request) (error)
 }
 
 type todoModel struct {
 }
 
 type Todo struct {
-	Id     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
+	gorm.Model
+	Name   string 
+	Status string 
 }
 
 func CreateTodoModel() TodoModel { // ←戻り値の型がTodoModel(=interface)になっている
@@ -31,106 +33,76 @@ func CreateTodoModel() TodoModel { // ←戻り値の型がTodoModel(=interface)
 
 // 作成されたTodoModelはインターフェースなので具体的なメソッドの実装内容(下の実装)まで見れない
 
-func (tm *todoModel) FetchTodos() ([]*Todo, error) {
+func (tm *todoModel) FetchTodos() (todos []*Todo, err error) {
 	// 構造体todoModelに対するメソッド、構造体todoModelはインターフェースTodoModelと
 	// 同じメソッドを持っているのでインターフェースTodoModel型に変換できる
 
-	sql := `SELECT id, name, status FROM todos`
+	// sql := `SELECT id, name, status FROM todos`
 
-	rows, err := Db.Query(sql)
+	// rows, err := Db.Query(sql)
+	err = Db.Find(&todos).Error
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var todos []*Todo
-
-	for rows.Next() {
-		var (
-			id, name, status string
-		)
-		if err := rows.Scan(&id, &name, &status); err != nil {
-			return nil, err
-		}
-
-		todos = append(todos, &Todo{
-			Id:     id,
-			Name:   name,
-			Status: status,
-		})
-	}
-
+	
 	return todos, nil
 
 }
 
-func (tm *todoModel) AddTodo(r *http.Request) (sql.Result, error) {
+func (tm *todoModel) AddTodo(r *http.Request) (*Todo, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, nil
 	}
 
-	t := time.Now()
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-
 	req := Todo{
-		Id:     id.String(),
 		Name:   r.FormValue("name"),
 		Status: r.FormValue("status"),
 	}
 
-	fmt.Println(r.FormValue("name"))
-	fmt.Println(req.Id, req.Name, req.Status)
-
-	sql := `INSERT INTO todos(id, name, status) VALUES($1, $2, $3)`
-
-	result, err := Db.Exec(sql, req.Id, req.Name, req.Status)
-	if err != nil {
-		return result, err
+	result := Db.Create(&req)
+	if result.Error != nil {
+		return &req, result.Error
 	}
 
-	return result, nil
+	return &req, nil
 
 }
 
-func (tm *todoModel) ChangeTodo(r *http.Request) (sql.Result, error) {
+func (tm *todoModel) ChangeTodo(r *http.Request) (*Todo, error) {
 	err := r.ParseForm() // Responseからvalueを取り出すための準備
 
 	if err != nil {
 		return nil, nil
 	}
 
-	sql := `UPDATE todos SET status = $1 WHERE id = $2`
-
-	afterStatus := "作業中"
-	if r.FormValue("status") == "作業中" {
-		afterStatus = "完了"
+	todo := Todo{}
+	Db.First(&todo, r.FormValue("id"))
+	if todo.Status == "作業中"{
+		todo.Status = "完了"
 	}
 
-	result, err := Db.Exec(sql, afterStatus, r.FormValue("id"))
+	result := Db.Save(&todo)
 
-	if err != nil {
-		return result, err
+	if result.Error != nil {
+		return &todo, result.Error
 	}
 
-	return result, nil
+	return &todo, nil
 }
 
-func (tm *todoModel) DeleteTodo(r *http.Request) (sql.Result, error) {
+func (tm *todoModel) DeleteTodo(r *http.Request) (error) {
 	err := r.ParseForm()
 
 	if err != nil {
-		return nil, nil
+		return nil
 	}
 
-	sql := `DELETE FROM todos WHERE id = $1`
+	result := Db.Delete(&Todo{}, r.FormValue("id"))
 
-	result, err := Db.Exec(sql, r.FormValue("id"))
-
-	if err != nil {
-		return result, err
+	if result.Error != nil {
+		return result.Error
 	}
 
-	return result, nil
+	return nil
 }

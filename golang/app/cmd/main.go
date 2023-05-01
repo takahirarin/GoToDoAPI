@@ -18,12 +18,13 @@ var tc = controller.CreateTodoContoroller(tm)
 var ro = controller.CreateRouter(tc)
 
 func migrate() {
-	sql := `INSERT INTO todos(id, name, status) VALUES('00000000000000000000000000','買い物', '作業中'),('00000000000000000000000001','洗濯', '作業中'),('00000000000000000000000002','皿洗い', '完了');`
-	_, err := model.Db.Exec(sql) // database.goで定義したDb
-	if err != nil {
-		fmt.Println(err)
-		return
+
+	req := &model.Todo{
+		Name:   "お風呂",
+		Status: "作業中",
 	}
+
+	model.Db.Create(&req)
 
 	fmt.Println("Migration is success!")
 
