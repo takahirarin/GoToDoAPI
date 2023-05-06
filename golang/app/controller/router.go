@@ -10,6 +10,7 @@ type Router interface {
 	AddTodo(w http.ResponseWriter, r *http.Request)
 	DeleteTodo(w http.ResponseWriter, r *http.Request)
 	ChangeTodo(w http.ResponseWriter, r *http.Request)
+	DeleteAllTodos(w http.ResponseWriter, r *http.Request)
 }
 
 type router struct {
@@ -70,4 +71,11 @@ func (ro *router) ChangeTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ro.tc.ChangeTodo(w, r)
+}
+
+func (ro *router) DeleteAllTodos(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Origin", os.Getenv("ORIGIN"))
+	w.Header().Set("Content-Type", "application/json")
+	ro.tc.DeleteAllTodos(w, r)
 }

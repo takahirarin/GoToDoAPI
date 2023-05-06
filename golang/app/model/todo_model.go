@@ -6,16 +6,18 @@ import (
 	// "github.com/oklog/ulid"
 	// "math/rand"
 	"net/http"
-	
+
 	// "gorm.io/driver/postgres"
-    "gorm.io/gorm"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TodoModel interface {
 	FetchTodos() ([]*Todo, error) //メソッド名 (引数) (リターン)
 	AddTodo(r *http.Request) (*Todo, error)
 	ChangeTodo(r *http.Request) (*Todo, error)
-	DeleteTodo(r *http.Request) (error)
+	DeleteTodo(r *http.Request) error
+	DeleteAllTodos() ([]*Todo, error)
 }
 
 type todoModel struct {
@@ -23,8 +25,8 @@ type todoModel struct {
 
 type Todo struct {
 	gorm.Model
-	Name   string 
-	Status string 
+	Name   string
+	Status string
 }
 
 func CreateTodoModel() TodoModel { // ←戻り値の型がTodoModel(=interface)になっている
@@ -44,7 +46,7 @@ func (tm *todoModel) FetchTodos() (todos []*Todo, err error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return todos, nil
 
 }
@@ -78,7 +80,7 @@ func (tm *todoModel) ChangeTodo(r *http.Request) (*Todo, error) {
 
 	todo := Todo{}
 	Db.First(&todo, r.FormValue("id"))
-	if todo.Status == "作業中"{
+	if todo.Status == "作業中" {
 		todo.Status = "完了"
 	}
 
@@ -91,7 +93,7 @@ func (tm *todoModel) ChangeTodo(r *http.Request) (*Todo, error) {
 	return &todo, nil
 }
 
-func (tm *todoModel) DeleteTodo(r *http.Request) (error) {
+func (tm *todoModel) DeleteTodo(r *http.Request) error {
 	err := r.ParseForm()
 
 	if err != nil {
@@ -105,4 +107,13 @@ func (tm *todoModel) DeleteTodo(r *http.Request) (error) {
 	}
 
 	return nil
+}
+
+func (tm *todoModel) DeleteAllTodos() (todos []*Todo, err error) {
+	result := Db.Clauses(clause.Returning{}).Where("1=1").Delete(&todos)
+	if result.Error != nil {
+		return todos, result.Error
+	}
+
+	return todos, nil
 }

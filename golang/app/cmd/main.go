@@ -5,6 +5,7 @@ import (
 	"example/todoapp/model"
 	"fmt"
 	"net/http"
+
 	// go.modで初めにモジュール名として定義したもの/インポートしたいフォルダ名？
 	"flag"
 )
@@ -42,6 +43,7 @@ func main() {
 	http.HandleFunc("/add-todo", ro.AddTodo)
 	http.HandleFunc("/delete-todo", ro.DeleteTodo)
 	http.HandleFunc("/change-todo", ro.ChangeTodo)
+	http.HandleFunc("/delete-all-todo", ro.DeleteAllTodos)
 	http.ListenAndServe(":8080", nil)
 
 }

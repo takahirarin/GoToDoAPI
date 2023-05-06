@@ -12,6 +12,7 @@ type TodoController interface {
 	AddTodo(w http.ResponseWriter, r *http.Request)
 	ChangeTodo(w http.ResponseWriter, r *http.Request)
 	DeleteTodo(w http.ResponseWriter, r *http.Request)
+	DeleteAllTodos(w http.ResponseWriter, r *http.Request)
 }
 
 type todoController struct {
@@ -84,7 +85,26 @@ func (tc *todoController) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json, err := json.Marshal(r.FormValue("id"))
-	
+
+	if err != nil {
+		fmt.Fprint(w, err) // wに書き込み
+		return
+	}
+
+	fmt.Fprint(w, string(json))
+
+}
+
+func (tc *todoController) DeleteAllTodos(w http.ResponseWriter, r *http.Request) {
+	result, err := tc.tm.DeleteAllTodos()
+
+	if err != nil {
+		fmt.Fprint(w, err) // wに書き込み
+		return
+	}
+
+	json, err := json.Marshal(result)
+
 	if err != nil {
 		fmt.Fprint(w, err) // wに書き込み
 		return
