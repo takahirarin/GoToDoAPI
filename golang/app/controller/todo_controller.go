@@ -1,18 +1,17 @@
 package controller
 
 import (
-	"encoding/json"
 	"example/todoapp/model"
-	"fmt"
-	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type TodoController interface {
-	FetchTodos(w http.ResponseWriter, r *http.Request)
-	AddTodo(w http.ResponseWriter, r *http.Request)
-	ChangeTodo(w http.ResponseWriter, r *http.Request)
-	DeleteTodo(w http.ResponseWriter, r *http.Request)
-	DeleteAllTodos(w http.ResponseWriter, r *http.Request)
+	FetchTodos(c *gin.Context)
+	AddTodo(c *gin.Context)
+	ChangeTodo(c *gin.Context)
+	DeleteTodo(c *gin.Context)
+	DeleteAllTodos(c *gin.Context)
 }
 
 type todoController struct {
@@ -23,93 +22,24 @@ func CreateTodoContoroller(tm model.TodoModel) TodoController {
 	return &todoController{tm}
 }
 
-func (tc *todoController) FetchTodos(w http.ResponseWriter, r *http.Request) {
-	todos, err := tc.tm.FetchTodos()
-
-	if err != nil {
-		fmt.Fprint(w, err) // wに書き込み
-		return
-	}
-
-	json, err := json.Marshal(todos)
-
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
-	}
-
-	fmt.Fprint(w, string(json))
+func (tc *todoController) FetchTodos(c *gin.Context) {
+	tc.tm.FetchTodos(c)
 
 }
-func (tc *todoController) AddTodo(w http.ResponseWriter, r *http.Request) {
-	result, err := tc.tm.AddTodo(r)
-
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
-	}
-
-	json, err := json.Marshal(result)
-
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
-	}
-
-	fmt.Fprint(w, string(json))
+func (tc *todoController) AddTodo(c *gin.Context) {
+	tc.tm.AddTodo(c)
 
 }
-func (tc *todoController) ChangeTodo(w http.ResponseWriter, r *http.Request) {
-	result, err := tc.tm.ChangeTodo(r)
-
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
-	}
-
-	json, err := json.Marshal(result)
-	if err != nil {
-		fmt.Fprint(w, err)
-		return
-	}
-
-	fmt.Fprint(w, string(json))
+func (tc *todoController) ChangeTodo(c *gin.Context) {
+	tc.tm.ChangeTodo(c)
 
 }
-func (tc *todoController) DeleteTodo(w http.ResponseWriter, r *http.Request) {
-	err := tc.tm.DeleteTodo(r)
-
-	if err != nil {
-		fmt.Fprint(w, err) // wに書き込み
-		return
-	}
-
-	json, err := json.Marshal(r.FormValue("id"))
-
-	if err != nil {
-		fmt.Fprint(w, err) // wに書き込み
-		return
-	}
-
-	fmt.Fprint(w, string(json))
+func (tc *todoController) DeleteTodo(c *gin.Context) {
+	tc.tm.DeleteTodo(c)
 
 }
 
-func (tc *todoController) DeleteAllTodos(w http.ResponseWriter, r *http.Request) {
-	result, err := tc.tm.DeleteAllTodos()
-
-	if err != nil {
-		fmt.Fprint(w, err) // wに書き込み
-		return
-	}
-
-	json, err := json.Marshal(result)
-
-	if err != nil {
-		fmt.Fprint(w, err) // wに書き込み
-		return
-	}
-
-	fmt.Fprint(w, string(json))
+func (tc *todoController) DeleteAllTodos(c *gin.Context) {
+	tc.tm.DeleteAllTodos(c)
 
 }

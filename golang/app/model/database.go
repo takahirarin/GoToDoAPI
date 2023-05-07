@@ -7,8 +7,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"gorm.io/driver/postgres"
-    "gorm.io/gorm"
-	
+	"gorm.io/gorm"
 )
 
 // データベースへのハンドル作成

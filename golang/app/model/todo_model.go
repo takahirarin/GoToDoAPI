@@ -2,22 +2,24 @@ package model
 
 import (
 	// "database/sql"
-	// "fmt"
+
 	// "github.com/oklog/ulid"
 	// "math/rand"
+
 	"net/http"
 
 	// "gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
+
+	"github.com/gin-gonic/gin"
 )
 
 type TodoModel interface {
-	FetchTodos() ([]*Todo, error) //メソッド名 (引数) (リターン)
-	AddTodo(r *http.Request) (*Todo, error)
-	ChangeTodo(r *http.Request) (*Todo, error)
-	DeleteTodo(r *http.Request) error
-	DeleteAllTodos() ([]*Todo, error)
+	FetchTodos(c *gin.Context) //メソッド名 (引数) (リターン)
+	AddTodo(c *gin.Context)
+	ChangeTodo(c *gin.Context)
+	DeleteTodo(c *gin.Context)
+	DeleteAllTodos(c *gin.Context)
 }
 
 type todoModel struct {
@@ -35,85 +37,84 @@ func CreateTodoModel() TodoModel { // ←戻り値の型がTodoModel(=interface)
 
 // 作成されたTodoModelはインターフェースなので具体的なメソッドの実装内容(下の実装)まで見れない
 
-func (tm *todoModel) FetchTodos() (todos []*Todo, err error) {
-	// 構造体todoModelに対するメソッド、構造体todoModelはインターフェースTodoModelと
-	// 同じメソッドを持っているのでインターフェースTodoModel型に変換できる
-
-	// sql := `SELECT id, name, status FROM todos`
-
-	// rows, err := Db.Query(sql)
-	err = Db.Find(&todos).Error
-	if err != nil {
-		return nil, err
+func (tm *todoModel) FetchTodos(c *gin.Context) {
+	var todos []*Todo
+	if err := Db.Find(&todos).Error; err != nil {
+		c.String(http.StatusInternalServerError, err.Error()) //errじゃなくてerr.Error()??
+		return
 	}
 
-	return todos, nil
+	c.JSON(http.StatusOK, todos)
 
 }
 
-func (tm *todoModel) AddTodo(r *http.Request) (*Todo, error) {
-	err := r.ParseForm()
-	if err != nil {
-		return nil, nil
+func (tm *todoModel) AddTodo(c *gin.Context) {
+	var req Todo
+	if err := c.ShouldBindJSON(&req); err != nil { // Todo型の変数reqにgin.Contextで送られてきたjsonデータを入れ込む
+		c.String(http.StatusBadRequest, err.Error())
+		return
 	}
 
-	req := Todo{
-		Name:   r.FormValue("name"),
-		Status: r.FormValue("status"),
+	if err := Db.Create(&req).Error; err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	result := Db.Create(&req)
-	if result.Error != nil {
-		return &req, result.Error
-	}
-
-	return &req, nil
+	c.JSON(http.StatusOK, req)
 
 }
 
-func (tm *todoModel) ChangeTodo(r *http.Request) (*Todo, error) {
-	err := r.ParseForm() // Responseからvalueを取り出すための準備
+func (tm *todoModel) ChangeTodo(c *gin.Context) {
+	var todo Todo
+	id := c.Param("id")
+	// body, _ := ioutil.ReadAll(c.Request.Body)
+	// fmt.Println("Request Body:", string(body))
 
-	if err != nil {
-		return nil, nil
+	if err := Db.First(&todo, id).Error; err != nil {
+		c.String(http.StatusNotFound, "Todo not found")
+		return
 	}
 
-	todo := Todo{}
-	Db.First(&todo, r.FormValue("id"))
 	if todo.Status == "作業中" {
 		todo.Status = "完了"
 	}
 
-	result := Db.Save(&todo)
-
-	if result.Error != nil {
-		return &todo, result.Error
+	if err := Db.Save(&todo).Error; err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return &todo, nil
+	c.JSON(http.StatusOK, todo)
+
 }
 
-func (tm *todoModel) DeleteTodo(r *http.Request) error {
-	err := r.ParseForm()
+func (tm *todoModel) DeleteTodo(c *gin.Context) {
+	id := c.Param("id")
 
-	if err != nil {
-		return nil
+	if err := Db.Delete(&Todo{}, id).Error; err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	result := Db.Delete(&Todo{}, r.FormValue("id"))
-
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return nil
+	c.JSON(http.StatusOK, gin.H{"id": id})
+	// gin.H -> map型のデータ構造。c.JSONは第一引数にhttpステータスコード、第二引数にレスポンスの本文をgin.H型で返す
 }
 
-func (tm *todoModel) DeleteAllTodos() (todos []*Todo, err error) {
-	result := Db.Clauses(clause.Returning{}).Where("1=1").Delete(&todos)
-	if result.Error != nil {
-		return todos, result.Error
+func (tm *todoModel) DeleteAllTodos(c *gin.Context) {
+	var todos []*Todo
+
+	if err := Db.Find(&todos).Error; err != nil {
+		return
 	}
 
-	return todos, nil
+	if len(todos) == 0 {
+		return
+	}
+
+	// 全レコードを削除する
+	if err := Db.Delete(&todos).Error; err != nil {
+		return
+	}
+
+	c.JSON(http.StatusOK, todos)
 }
