@@ -6,6 +6,7 @@ import (
 	// "github.com/oklog/ulid"
 	// "math/rand"
 
+	"fmt"
 	"net/http"
 
 	// "gorm.io/driver/postgres"
@@ -17,7 +18,8 @@ import (
 type TodoModel interface {
 	FetchTodos(c *gin.Context) //メソッド名 (引数) (リターン)
 	AddTodo(c *gin.Context)
-	ChangeTodo(c *gin.Context)
+	EditTodo(c *gin.Context)
+	UpdateTodo(c *gin.Context)
 	DeleteTodo(c *gin.Context)
 	DeleteAllTodos(c *gin.Context)
 }
@@ -29,6 +31,11 @@ type Todo struct {
 	gorm.Model
 	Name   string
 	Status string
+}
+
+type TodoForm struct {
+	Name   string `form:"name" binding:"required"`
+	Status string `form:"status" binding:"required"`
 }
 
 func CreateTodoModel() TodoModel { // ←戻り値の型がTodoModel(=interface)になっている
@@ -44,27 +51,33 @@ func (tm *todoModel) FetchTodos(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, todos)
+	//c.JSON(http.StatusOK, todos)
+	c.HTML(http.StatusOK, "index.html", gin.H{"todos": todos})
 
 }
 
 func (tm *todoModel) AddTodo(c *gin.Context) {
+	var reqform TodoForm
 	var req Todo
-	if err := c.ShouldBindJSON(&req); err != nil { // Todo型の変数reqにgin.Contextで送られてきたjsonデータを入れ込む
+	if err := c.ShouldBind(&reqform); err != nil { // Todo型の変数reqにgin.Contextで送られてきたjsonデータを入れ込む
+		fmt.Println(reqform)
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
+	req.Name = reqform.Name
+	req.Status = reqform.Status
 
 	if err := Db.Create(&req).Error; err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, req)
+	//c.JSON(http.StatusOK, req)
+	c.Redirect(http.StatusMovedPermanently, "/fetch-todos")
 
 }
 
-func (tm *todoModel) ChangeTodo(c *gin.Context) {
+func (tm *todoModel) EditTodo(c *gin.Context) {
 	var todo Todo
 	id := c.Param("id")
 	// body, _ := ioutil.ReadAll(c.Request.Body)
@@ -74,17 +87,23 @@ func (tm *todoModel) ChangeTodo(c *gin.Context) {
 		c.String(http.StatusNotFound, "Todo not found")
 		return
 	}
+	c.HTML(http.StatusOK, "edit.html", gin.H{"todo": todo})
 
-	if todo.Status == "作業中" {
-		todo.Status = "完了"
-	}
+}
 
+func (tm *todoModel) UpdateTodo(c *gin.Context) {
+	var todo Todo
+	id := c.Param("id")
+	name, _ := c.GetPostForm("name")
+	status, _ := c.GetPostForm("status")
+	Db.First(&todo, id)
+	todo.Name = name
+	todo.Status = status
 	if err := Db.Save(&todo).Error; err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	c.JSON(http.StatusOK, todo)
+	c.Redirect(http.StatusMovedPermanently, "/fetch-todos")
 
 }
 
@@ -96,7 +115,8 @@ func (tm *todoModel) DeleteTodo(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"id": id})
+	//c.JSON(http.StatusOK, gin.H{"id": id})
+	c.Redirect(http.StatusMovedPermanently, "/fetch-todos")
 	// gin.H -> map型のデータ構造。c.JSONは第一引数にhttpステータスコード、第二引数にレスポンスの本文をgin.H型で返す
 }
 
@@ -116,5 +136,6 @@ func (tm *todoModel) DeleteAllTodos(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, todos)
+	//c.JSON(http.StatusOK, todos)
+	c.Redirect(http.StatusMovedPermanently, "/fetch-todos")
 }

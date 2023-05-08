@@ -9,7 +9,8 @@ import (
 type TodoController interface {
 	FetchTodos(c *gin.Context)
 	AddTodo(c *gin.Context)
-	ChangeTodo(c *gin.Context)
+	EditTodo(c *gin.Context)
+	UpdateTodo(c *gin.Context)
 	DeleteTodo(c *gin.Context)
 	DeleteAllTodos(c *gin.Context)
 }
@@ -30,10 +31,15 @@ func (tc *todoController) AddTodo(c *gin.Context) {
 	tc.tm.AddTodo(c)
 
 }
-func (tc *todoController) ChangeTodo(c *gin.Context) {
-	tc.tm.ChangeTodo(c)
+func (tc *todoController) EditTodo(c *gin.Context) {
+	tc.tm.EditTodo(c)
 
 }
+func (tc *todoController) UpdateTodo(c *gin.Context) {
+	tc.tm.UpdateTodo(c)
+
+}
+
 func (tc *todoController) DeleteTodo(c *gin.Context) {
 	tc.tm.DeleteTodo(c)
 

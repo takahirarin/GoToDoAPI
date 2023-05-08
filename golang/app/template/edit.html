@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>TODOアプリ(Golang * gin * gorm)</title>
+</head>
+<body>
+<form method="POST" action="/update-todo/{{.todo.ID}}">
+    <input type="text" name="name" value="{{.todo.Name}}"><br>
+    <input type="text" name="status" value="{{.todo.Status}}"><br>
+    <input type="submit" value="更新">
+</form>
+</body>
+</html>
