@@ -6,7 +6,7 @@ import (
 
 	// "os"
 	// "database/sql"
-	_ "github.com/lib/pq"
+	// _ "github.com/lib/pq"
 
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
@@ -21,7 +21,7 @@ var server = "todoapi-database.database.windows.net"
 var port = 1433
 var user = "takahirarin"
 var password = "Piyorinko_0118"
-var database = "ToDoAPIDataBase"
+var database = "todoapptakahirarin"
 
 // データベースへ接続
 func init() {

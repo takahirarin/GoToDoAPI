@@ -1,13 +1,16 @@
 version: '2' # composeファイルのバーション指定
 
 services:
-  todo_app: # service名
+  todoapp: # service名
     build:  # ビルドに使用するDockerfileがあるディレクトリ指定
       context: ./golang
       dockerfile: Dockerfile
+    # image: todoapptakahirarin.azurecr.io/todoapp
     ports:
       - 8080:8080
     tty: true # コンテナの起動永続化
+    depends_on:
+      - db
     volumes:
       - .:/go/src/work # マウントディレクトリ指定
   
@@ -16,11 +19,11 @@ services:
       context: ./psql
       dockerfile: Dockerfile
     environment:
-      POSTGRES_USER: rin
-      POSTGRES_PASSWORD: rin
-      PGPASSWORD: rin
-      POSTGRES_DB: rin
-      TZ: "Asia/Tokyo"
+      POSTGRES_HOST: todoapi-database.database.windows.net
+      POSTGRES_USER: takahirarin
+      POSTGRES_PASSWORD: Piyorinko_0118
+      POSTGRES_PORT: 1433
+      POSTGRES_DB: ToDoAPIDataBase
     ports:
       - 5432:5432
     tty: true
@@ -29,3 +32,7 @@ services:
 
 volumes:
   db-store:
+    # driver: azure_file
+    # driver_opts:
+    #   share_name: db-store
+    #   storage_account_name: todoapptakahirarin
